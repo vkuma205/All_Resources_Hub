@@ -1,0 +1,128 @@
+ka1Tu|es7efah6nie9ooVohngae6doin
+
+
+
+Kafka Architecture:
+              -> Topic
+              -> Producer
+              -> Consumer
+			  
+* Kafka Getting Started
+* Command line commands for Kafka.
+===========producer and consumer===========
+To create a topic we need zookeeper.
+/usr/hdp/current/kafka-broker/bin
+
+
+ vi ~/.bash_profile----export the kafka paths.
+ .~/.bash_profile---->run the bash file.
+ if it is correctly installed we can check that by:
+ kafka and hit tab. you will see all the shell scripts.
+ ===========
+1.Create kafka Topic:(nn01,nn02 and rm01 are the zookeeper nodes.)
+ kafka-topics.sh --create \
+                 --zookeeper nn01.itversity.com:2181,nn02.itversity.com:2181,rm01.itversity.com:2181 \
+                 --replication-factor 1 \
+			     --partitions 1 \
+				 --topic kafkademogvk
+ =================
+ 2. TO list the topics.
+ TO validate if the topic is created or not:
+ kafka-topics.sh --list \
+     --zookeeper nn01.itversity.com:2181,nn02.itversity.com:2181,rm01.itversity.com:2181 \
+     --topic kafkademogvk
+ 
+ =======
+ 3. TO produce messages into topics.
+ kafka-console-producer.sh \
+       --broker-list nn01.itversity.com:6667,nn02.itversity.com:6667,rm01.itversity.com:6667 \
+	   --topic kafkademogvk
+	   
+===============
+4. To Consume the messages from the topic.
+
+kafka-console-consumer.sh \
+  --zookeeper nn01.itversity.com:2181,nn02.itversity.com:2181,rm01.itversity.com:2181 \
+  --topic kafkademogvk \
+  --from-beginning
+  ==================================
+  we can describe, delete the topics. check the documentation for further details.
+====>>Kafka topic anatomy
+Partition is for scalability and replication is for High availability.
+OffSet means the position of the last message read by the subscriber.
+1. Topic is nothing but a file which captures the stream of messages.
+2. Publishers publish message to topic.
+3. Consumers subscriber to topic.
+4. Topics can be partitioned for scalability.
+5. Each topic partition can be cloned for reliability.
+6. OffSet: position of the last message consumer have read from each partition of the topic.
+7. Consumer group can be created to facilitate multiple consumers read from same topic in cordinated fashion(Off set is tracked at group level)
+======================130.Flume and kafka in streaming analytics=============
+Main Advantage of Flume.
+======================131. Getting Started Spark Streaming====================
+spark-shell --master yarn --conf spark.ui.port=12456
+
+import org.apache.spark.streaming._
+import org.apache.spark.SparkConf
+sc.stop()  ---->need to stop the  spark context before you run the streaming context.
+val conf = new SparkConf().setAppName("streaming").setMaster("yarn-client")
+val ssc = new StreamingContext(conf, Seconds(10))
+
+========================132. Setting up Netcat==================================
+========================133. Develop wordcount program================
+socketTextStream("localhost", 9999)--->If we want to read data from webservice using port no. SocketTextStream will create Dstream out of the data to the ipaddress 
+and the port no.
+val lines = ssc.socketTextStream("localhost", 9999) ---this will return a Dstream.
+Dstream is a series of Rdd's which are read in streaming context.
+
+
+import org.apache.spark.streaming._
+import org.apache.spark.SparkConf
+val conf = new SparkConf().setAppName("streaming").setMaster("yarn-client")
+val ssc = new StreamingContext(conf, Seconds(10))
+val lines = ssc.socketTextStream("localhost", 9999)
+val words = lines.flatMap(line => line.split(" "))
+val tuples = words.map(word => (word,1))
+val wordCounts = tuples.reduceByKey((t,v) => t + v)
+wordCounts.print()
+ssc.start()
+ssc.awaitTermination()
+==============134. Ship and run word count prog.=========
+nc -lk gw01.itversity.com 9999
+telnet gw01.itversity.com 9999 
+Check for the whole program.
+==============135. DataStructure (DStream)================
+Windowing function- moving 30 sec. window with 10 sec. interval.
+==============136. Get departmentwise traffic every 30 seconds========
+ls -ltr /opt/gen_logs/logs/
+tail_logs.sh
+==============137.======================
+===============138=============Done	
+===============139===============
+================140=============
+=================141=============Integrating Flume and SparkStreaming=================
+import org.apache.spark.streaming.flume._
+val stream = FlumeUtils.createPollingStream(ssc, args(1), args(2).toInt)   ------> args(1) is ip address and args(2) is port no.
+val messages = stream.map(s => new String(s.event.getBody.array()))
+=================142==============
+Check for the spark submit command for spark streaming and flume integration.
+=================143===============Integrate Flume and Kafka=============
+Publish messages to topic and then consume them with subscribers.
+kafka gives scalability, reliability 
+legacy applications.
+Change the sink from hdfs to kafka.
+flume-ng version
+Configure the sink to write to the kafka topics.
+================144===============Flume Kafka Integration============
+flume-ng agent --name wk --conf-file /home/vinodkumargardas/wslogstoKafka/wskafka.conf 
+history|grep consume
+=================145=======Kafka and SparkStreaming add dependencies=========
+Consume messages from kafka topics using spark streaming.
+spark-streaming-kafka   dependency.
+import org.apache.spark.streaming.kafka._
+==============146=====Kafka and spark streaming==============
+import kafka.serializer.StringDecoder
+val kafkaParams = Map[string, string]("metadata.broker.list" -> "nn01.itversity.com:6667, nn01.itversity.com:6667, rm01.itversity.com:6667")
+val topicset = set("fkdemodg")
+val stream = kafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder](ssc, kafkaParams, topicset)
+

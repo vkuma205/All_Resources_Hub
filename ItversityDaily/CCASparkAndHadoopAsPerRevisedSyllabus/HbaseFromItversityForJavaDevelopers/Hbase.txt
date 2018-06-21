@@ -1,0 +1,99 @@
+In Hbase you will not use mapreduce for Processing.
+-> Overview
+-> HBase Architecture
+-> Setup Zookeeper using third party tools.
+-> Setup Hbase using third party tools.
+-> HBase parameter files.
+-> HBase log files.
+-> HBase demo.
+============================================================Overview=====================
+No SQL Database.
+High Level Architecture.---->HMaster  
+                                  -> HRegion Server
+								  -> HRegion Server
+			For High availability there would be more Hmasters.
+			
+Hbase uses:
+			Column Oriented.
+			Flexible Schema, columns can be added on fly.
+			
+			Good with Sparse tables.
+			Designed to store Denormalized data. (Denormalization is the strategy on the database to increase the performance of a database.)
+			Does not follow Codd's rule:
+			
+			
+Row Key.
+Joins can be done for Batch jobs not for the real time.
+6 node cluster HBase.
+          3 HMaster.
+		  3 HRegion Server.
+		  
+===> Set up zookeper on atleast 3nodes in the cluster.
+HBase uses HDFS for storage.
+hbase shell  -----> login through putty.
+create 't1', 'cf1'
+list
+put 't1', 'r1', 'cf1:c1', 'v1'
+scan 't1'
+===============4th video==============
+disable 't1'
+drop 't1'
+create 'demo', 'cf1'
+put 'demo', '1', 'cf1:column1', 'value1'
+scan 'demo'
+=============6th  Video===========Sample Example program=================
+setting Hbase in eclipse:
+conf.set("hbase.zookeeper.quorum", "hadoop271.itversity.com");
+conf.set("hbase.zookeeper.property.clientPort","2181");
+
+Connection connection = ConnectionFactory.createConnection(conf);
+Table table = connection.getTable(TableName.valueOf("demo"));    ---> Table object
+Scan scan1 = new Scan(); ---> Scan Object.
+ResultScanner scanner1 = table.gerScanner(scan1);
+for(Result res: scanner1){
+system.out.println(res);
+}
+
+put 'demo', '2', 'cf1:column2', 'value2'   ---> demo is the  table name, 2 is the row key, column2 is the column family, and value2 is the value.
+
+
+insert into the table, get data from the table, delete data from the table. all the can be done with Hbase.
+=========================================================video 7==========
+Only two ways to read the data from HBase.
+1. Scan and 
+2. Get
+
+Crud operations on HBase.---> create, Read, Update and delete operations on HBase.
+
+DAO layer program-> data access layer program.
+Insert the data into HBase through program.
+  --> Create a put object.
+     Put put = new Put("3".getBytes());   ---> Inserting the row key.
+    put.addColumn("cf1".getBytes(), "column1".getBytes(), "Value1".getBytes());
+put.addColumn("cf1".getBytes(), "column2".getBytes(), "Value2".getBytes());
+table.put(put);
+
+
+get 'demo', '3'  --> get is the more powerful command for checking the data.
+
+Get through java prog.
+Get get = new Get("3".getBytes());
+Result result = table.get(get);
+
+In Hbase the data is store as Byte Array.
+delete 'demo', '3', 'cf1:column1'
+Delete del = new Delete("3".getBytes());
+table.delete(del);
+==============	
+Reference:
+https://github.com/dgadiraju/code/blob/master/nosql/hbase/src/main/java/hbase/GettingStarted.java
+
+enable 'demo'
+disable 'demo'
+truncate 'demo'
+
+In HBase, when we are loading data in the tables, column names will be sorted automatically.
+data will be sorted by row keys and with in each row, column names will be sorted.
+HBase does not support parent key and foreign key relatin ships.
+HBase if not for transactional based systems. It's mainly for the real time read and write capabilities but does not have transactions associated with them.
+===============================

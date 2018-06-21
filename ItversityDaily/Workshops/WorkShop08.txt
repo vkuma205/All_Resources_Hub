@@ -1,0 +1,55 @@
+BigData WorkShop -08 Spark-Writing Spark Applications using scala -cOMPUTE dAILY Revenue.
+cd /data
+du -sh retail_db ----is the du(diskUsage), s(Summarizing), h(HumanRedableFormat) for the directory.
+wc -l nyse/*     ----Gives the wordCount of the directory.
+Problem Statement1:
+Get the revenue for each day for only completed or closed orders.
+
+What sc will do?
+It starts a webservice on a port no.
+
+
+=================================================================
+val orders = sc.textFile("hdfs:///user/vinodkumargardas/data/retail_db/departments/p*")
+ val ordersFilterd = orders.filter(rec => rec.split(",")(3) == "COMPLETE" || rec.split(",")(3) == "CLOSED")
+ val ordersMap = ordersFilterd.map(rec => (rec.split(",")(0).toInt, rec.split(",")(1)))
+ o/p:
+ (1,2013-07-25 00:00:00.0)
+(3,2013-07-25 00:00:00.0)
+(4,2013-07-25 00:00:00.0)
+(5,2013-07-25 00:00:00.0)
+(6,2013-07-25 00:00:00.0)
+ val orderItemMap = sc.textFile("hdfs:///user/vinodkumargardas/data/retail_db/order_items/p*")
+ val orderItemMapM = orderItemMap.map(rec => (rec.split(",")(0).toInt, rec.split(",")(1).toInt))
+ o/p:
+ (1,1)
+(2,2)
+(3,2)
+(4,2)
+(5,4)
+
+ 
+ 
+ val ordersJoin = ordersMap.join(orderItemMapM)
+ o/p:
+ (65722,(2014-05-23 00:00:00.0,26253))
+(23776,(2013-12-20 00:00:00.0,9512))
+(53926,(2014-06-30 00:00:00.0,21569))
+(51620,(2014-06-13 00:00:00.0,20659))
+(4992,(2013-08-24 00:00:00.0,1997))
+
+
+val ordersJoinMapGBK = orderJoinMap.groupByKey()
+org.apache.spark.rdd.RDD[(String, Iterable[String])] = ShuffledRDD[15] at groupByKey at <console>:41
+Iterable is an array.
+
+=========================================================================================================
+Example Exercise for accessing the tuples using the map function. processing tuples with map:
+val t = (65722,("2014-05-23 00:00:00.0",26253))
+t._1 = 65722
+t._2 = (2014-05-23 00:00:00.0,26253)
+t._2._1 = 2014-05-23 00:00:00.0
+t._2._2 = 26253
+
+Reference:
+https://www.youtube.com/watch?v=7xDXDwYwqG8&t=478s

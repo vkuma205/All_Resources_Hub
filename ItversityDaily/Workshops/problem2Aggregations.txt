@@ -1,0 +1,33 @@
+
+
+
+Converting | delimited file to , seperated file using map.
+var products = sc.textFile("hdfs:///user/vinodkumargardas/data/retail_db/testData/p*").
+  map(x=> {
+    var d = x.split('|'); (d(0).toInt,d(1).toInt,d(2).toString,d(3).toString,d(4).toFloat,d(5).toString)
+  });
+  
+  case class Product(
+  productID:Integer, 
+  productCategory: Integer, 
+  productName: String, 
+  productDesc:String, 
+  productPrice:Float, 
+  productImage:String
+);
+var productsDF = products.map(x=> Product(x._1,x._2,x._3,x._4,x._5,x._6)).toDF();
+import org.apache.spark.sql.functions._
+var dataFrameResult = productsDF.
+  filter("productPrice < 100").
+  groupBy(col("productCategory")).
+  agg(max(col("productPrice")).alias("max_price"),
+      countDistinct(col("productID")).alias("tot_products"),
+      round(avg(col("productPrice")),2).alias("avg_price"),
+      min(col("productPrice")).alias("min_price")).
+  orderBy(col("productCategory"));
+dataFrameResult.show();
+
+
+
+Reference:
+http://www.itversity.com/lessons/problem-2-aggregations-using-spark/

@@ -1,0 +1,12 @@
+=================capgimnei================================
+1.Sqoop----Splitby key drives the job or no. of mappers
+2. difficulty you faced with sqoop.
+3. Hive- how to update.--if you have 100 records in hive table and you want to update only 10records. what you would do? and how to remove duplicate records in hive?
+4. no. of executors and no. of cores, how to decide in spark submit command.?
+    In my case when i am working with UHG. We are assigned to work only on particular queues. we need to run the jobs in that queues.
+5. when running spark streaming job, if the job fails in middle, how you would run the job from where it got failed.
+        Spark streaming needs to checkpoint enough information to a fault-tolerant storage system such that it can recover from failures.
+		We need to configure the check pointing.
+		    1. Meta data checkpointing
+			2. Data Check pointing.
+=============================================

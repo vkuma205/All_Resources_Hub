@@ -1,0 +1,112 @@
+Exercise -05
+Password: ka1Tu|es7efah6nie9ooVohngae6doin
+spark-shell --master yarn --conf spark.ui.port=54431
+Develop Spark Application using Scala to get daily revenue per department.
+=====================================================================================
+USING API'S :
+
+val dept = sc.textFile("hdfs:///user/vinodkumargardas/data/retail_db/orders/part-00000")
+val departmentsm = dept.map(rec => (rec.split(",")(0).toInt,rec.split(",")(1) ) )
+
+val catg = sc.textFile("/user/vinodkumargardas/data/retail_db/categories/part-00000")
+val categoriesm = catg.map(rec => (rec.split(",")(1).toInt,rec.split(",")(0).toInt ) )
+
+val products = sc.textFile("/user/vinodkumargardas/data/retail_db/products/part-00000")
+val productsm = products.map(rec => (rec.split(",")(0).toInt,rec.split(",")(1).toInt ) )
+
+val ods = sc.textFile("/user/vinodkumargardas/data/retail_db/orders/part-00000")
+val odsf = ods.filter(rec => rec.split(",")(3)=="COMPLETE" || rec.split(",")(3)=="CLOSED" )
+val odsfm = odsf.map(rec => (rec.split(",")(0).toInt,rec.split(",")(1) ))
+
+val oir = sc.textFile("/user/vinodkumargardas/data/retail_db/order_items/part-00000")
+val oirm = oir.map(rec => (rec.split(",")(1).toInt, (rec.split(",")(2).toInt,rec.split(",")(4)) ))
+
+val oorditmjoin = oirm.join(odsfm)
+val ood = oorditmjoin.map(rec=> (rec.2.1.1, (rec.2.1.2, rec.2.2)))
+val depctjoin = categoriesm.join(departmentsm)
+val out1 = depctjoin.map(rec => (rec.2.1,rec.2.2) )
+
+val proodjoin = productsm.join(ood)
+val out2 = proodjoin.map(rec => (rec.2.1,(rec.2.2.1, rec.2.2.2) ) )
+
+val out3 = out1.join(out2)
+val out4 = out3.map(rec => ((rec.2.2.2,rec.2.1 ),rec.2.2.1.toFloat) )
+val output = out4.reduceByKey(+)
+val finnal = output.map(rec => (rec.1.1, rec.1.2, rec._2) )
+
+===================================================USING DATA FRAMES :=====================================
+
+case class departments(
+department_id: Int,
+department_name: String)
+val dept = sc.textFile("/user/cloudera/allin/retail_db/departments/p*")
+val deptdf = dept.map(rec => {
+val b = rec.split(",")
+departments(b(0).toInt,b(1).toString )
+}).toDF
+case class categories(
+category_id: Int,
+category_department_id: Int,
+category_name : String)
+val catg = sc.textFile("/user/cloudera/allin/retail_db/categories/p*")
+val catgdf = catg.map(rec => {
+val b = rec.split(",")
+categories(b(0).toInt, b(1).toInt, b(2).toString)
+}).toDF
+
+case class Products(
+product_id: Int,
+product_category_id: String)
+val products = sc.textFile("/user/cloudera/allin/retail_db/products/p*")
+val productsdf = products.map(rec => {
+val b = rec.split(",")
+Products(b(0).toInt,b(1).toString)
+}).toDF
+
+val ods = sc.textFile("/user/cloudera/allin/retail_db/orders/p*")
+val odsf = ods.filter(rec => rec.split(",")(3)=="COMPLETE" || rec.split(",")(3)=="CLOSED" )
+val oir = sc.textFile("/user/cloudera/allin/retail_db/order_items/p*")
+
+case class Orderss(
+order_id: Int,
+order_date: String,
+order_customer_id: Int,
+order_status : String)
+val odsfdf = odsf.map(rec => {
+val b = rec.split(",")
+Orderss(b(0).toInt, b(1).toString, b(2).toInt, b(3).toString)
+}).toDF
+odsfdf.registerTempTable("orders")
+
+case class OrderItems(
+order_item_id : Int,
+order_item_order_id: Int,
+order_item_product_id: Int,
+order_item_quantity: Int,
+order_item_subtotal: Double,
+order_item_product_price: Double)
+val oirdf = oir.map(rec => {
+val c = rec.split(",")
+OrderItems(c(0).toInt, c(1).toInt, c(2).toInt, c(3).toInt,c(4).toDouble,c(5).toDouble)
+}).toDF
+oirdf.registerTempTable("orderitems")
+
+sqlContext.sql("select * from orders limit 10").collect().foreach(println)
+val orderjoin = odsfdf.join(oirdf, odsfdf("order_id") === oirdf("order_item_order_id"))
+val productjoin = orderjoin.join(productsdf, orderjoin("order_item_product_id") === productsdf("product_id"))
+val catgjoin = productjoin.join(catgdf, productjoin("product_category_id") === catgdf("category_id"))
+val deptjoin = catgjoin.join(deptdf, catgjoin("category_department_id") === deptdf("department_id"))
+
+sqlContext.setConf("spark.sql.shuffle.partitions", "2")
+import org.apache.spark.sql.functions._
+deptjoin.groupBy("order_date", "department_name").agg(sum("order_item_subtotal")).show()
+
+===============================================HIVE QUERY :====================================
+select department_name,sum(order_item_subtotal),order_date 
+from orders 
+join order_items on orders.order_id = order_items.order_item_order_id
+join products on order_items.order_item_product_id = products.product_id
+join categories on products.product_category_id = categories.category_id
+join departments on categories.category_department_id = departments.department_id
+where order_status = "CLOSED" or order_status = "COMPLETE"
+group by order_date, department_name;

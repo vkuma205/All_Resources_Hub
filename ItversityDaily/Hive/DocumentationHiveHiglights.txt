@@ -1,0 +1,12 @@
+FileFormats:
+     1. ORC File Format: The optimized row columnar(ORC) file format provides a highly efficient way to store Hive data.
+        ORC files improves performance when hive is reading, writing and processing data.
+     2. Parquet File Format: We created parquet to make the advantages of compressed, efficient columnar data 
+        representation available to any project in the Hadoop eco system. Parquet allows compression schemes to be specified
+        on a per-column level, and is future-proofed to allow adding more encodings as they are invented and implemented.
+     3. Avro
+DataTypes in Hive:
+     1.Numeric Types
+     2. Data/Time types
+     3. String types
+      4. Complex Types: Arrays, Maps, Structs and Union.

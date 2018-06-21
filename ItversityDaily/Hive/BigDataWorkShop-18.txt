@@ -1,0 +1,134 @@
+create database if not exists vinodkumargardas;
+set hive.cli.print.current.db;
+dfs -ls /public/retail_db;-------------dfs is an alias to Hdfs. we can check the hdfs path.
+
+//Managed Table.
+create table departments (
+ department_id int,
+ department_name string
+ ) row format delimited fields terminated by ','
+ stored as textfile;
+
+ 
+ 
+ load data local inpath '/home/vinodkumargardas/retail_db/departments' into table departments;
+ describe formatted departments;    -------gives all the information abt table which is called as meta data.
+ select count(1) from departments;
+set;
+set dfs.blocksize;
+
+hive -e "use dgadiraju; select count(1) from departments" -----------this can be used in shell script.
+
+
+some of the information is stdout and stderr.
+0 is stdin, 1 is stdout, 2 is stderr.
+2>query.log------it will always override
+2>>query.log----it will always append, for the first time it will create and next time it will append.
+hive -e "use dgadiraju; select count(1) from departments" 2>>query.log 1>results
+
+ mysql -u retail_dba -h nn01.itversity.com -p
+ Password: itversity
+ 
+ CREATE TABLE categories(
+ category_id int,
+ category_department_id int,
+ category_name varchar(45)
+ );
+
+ 
+ insert into categories values (2,1, 'Testing two');
+ select * from categories;
+ DROP TABLE categories;
+============================
+create table departments (
+department_id int,
+department_name string
+) row format delimited fields terminated by ',';
+
+create table categories (
+category_id int,
+category_department_id int,
+category_name string
+) row format delimited fields terminated by ',';
+
+create table products (
+product_id int,
+product_category_id int,
+product_name string,
+product_description string,
+product_price float,
+product_image string
+) row format delimited fields terminated by ',';
+
+create table order_items (
+order_item_id int,
+order_item_order_id int,
+order_item_product_id int,
+order_item_quantity int,
+order_item_subtotal float,
+order_item_product_price float
+) row format delimited fields terminated by ',';
+
+create table orders (
+order_id int,
+order_date string,
+order_customer_id int,
+order_status string
+) row format delimited fields terminated by ',';
+
+create table customers (
+customer_id int,
+customer_fname string,
+customer_lname string,
+customer_email string,
+customer_password string,
+customer_street string,
+customer_city string,
+customer_state string,
+customer_zipcode string
+) row format delimited fields terminated by ',';
+
+load data local inpath '/data/retail_db/departments' into table departments;
+load data local inpath '/data/retail_db/categories' into table categories;
+load data local inpath '/data/retail_db/products' into table products;
+load data local inpath '/data/retail_db/order_items' into table order_items;
+load data local inpath '/data/retail_db/orders' into table orders;
+load data local inpath '/data/retail_db/customers' into table customers;
+====================================
+select count(1) from departments;
+select * from departments limit 10;
+===========
+Two ways of loading data  into tables 1. using Load command and 2. Using Insert
+hadoop fs -ls /apps/hive/warehouse/gardasdatabase.db
+Load command is similar to put or copyFromLocal in HDFS. it reads the data and load into the directory.
+
+ create external table orders_external (
+                     > order_id int,
+                     > order_date string,
+                     > order_customer_id int,
+                     > order_status string)
+                     > row format delimited fields terminated by ','
+                     > location '/user/vinodkumargardas/retail_db/orders';
+In case of external tables we need to give the location.
+============================
+Difference b/w managed table and external table.
+1.While creating managed table we don't specify the location where as while creating external table will specify the location.
+2. If we drop the external table will lose the external table and the data is still availabe at the location where as if we drop the managed table 
+will lose the table and data.
+Why we need managed table and external table?
+In some cases one data  set should is used for many things. if we use managed table and drop the table, will lose the data and the table. In this
+case will use external table.
+===================
+spark-shell --enter
+sqlContext.sql("use gardasdatabase")
+sqlContext.sql("select * from departments").collect().foreach(println)
+sqlContext.sql("select department_name from departments").collect().foreach(println)
+//If we want the data to be tab delimited.
+sqlContext.sql("select * from departments").map(rec => rec.mkString("\t")).collect().foreach(println)
+val s = sqlContext.sql("select * from departments")
+s.saveAsTable("vinodTest")
+
+==============================Reference=====================
+http://www.itversity.com/lessons/cca-hive-databases-scala/
+
+

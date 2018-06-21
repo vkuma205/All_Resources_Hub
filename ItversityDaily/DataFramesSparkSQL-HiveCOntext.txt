@@ -1,0 +1,20 @@
+==================Compute Total Revenue for each Day.===========
+ CREATE DATABASE sparktestdemo;
+ USE sparktestdemo;
+ CREATE TABLE orders (
+  order_id int,
+  order_date string,
+  order_customer_id int,
+  order_status string
+) ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
+STORED AS TEXTFILE;
+LOAD DATA LOCAL INPATH '/home/vinodkumargardas/tobedeleted/orders' INTO TABLE orders;
+
+=========================
+  > val sc: SparkContext
+         > val sqlContext = new org.apache.spark.sql.SQLContext(sc)
+         > import sqlContext.implicits._
+/home/vinodkumargardas/file.json
+======================================
+spark-shell --master yarn --conf spark.ui.port=54431
+ka1Tu|es7efah6nie9ooVohngae6doin

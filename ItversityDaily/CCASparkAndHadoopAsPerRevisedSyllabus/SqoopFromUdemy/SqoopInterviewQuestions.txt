@@ -1,0 +1,4 @@
+1. Mappers: You have to have a primary column(split-by column) or you will not be able to acheive parallelism.
+   By default sqoop uses 4 mappers.
+2. Password issues. we need to put in sqoop command that every one sees. for that we can write a script which stores a password
+and call that script.

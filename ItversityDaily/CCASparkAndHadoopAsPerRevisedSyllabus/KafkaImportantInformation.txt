@@ -1,0 +1,11 @@
+https://gist.github.com/dgadiraju/c4ed3195e563779e97a1658598269652
+
+BestREsources:
+https://github.com/LearningJournal/ApacheKafkaTutorials?
+https://www.youtube.com/watch?v=gg-VwXSRnmg&index=1&list=PLkz1SCf5iB4enAR00Z46JwY9GGkaS2NON
+=========================
+Spark useful link:
+https://data-flair.training/blogs/fault-tolerance-in-apache-spark/
+==========================
+Itversity handson programs Git.
+https://gist.github.com/dgadiraju/c261ffde8e4ff0ca527266c6769beb0b

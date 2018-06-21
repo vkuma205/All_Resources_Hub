@@ -1,0 +1,33 @@
+Application Architecture -n-tier.
+Select * from dual;
+Select * from user_tables;
+Categories of Databases:
+   1. Relational Databases(Oracle, informatica, Sybase, MySql etc.)
+   2. OLAP/Data Warehouse appliances/MPP(TeraData,GreenPlum,Vertica)
+   3. NoSql Databases.(Cassandra, Hbase,MongoDB etc)
+   4. InMemory Databases(Gemfire,Coherence etc)
+   5. SearchBased Databases(ElasticSearch, Solr etc)
+   6. BatchProcessing FrameWorks(Mapreduce, Spark etc.)
+   
+   Modern Applications need to be polygolt(Different modules need different category of databases)
+ 
+ crontab -l
+ 
+ ==============
+ SELECT * FROM columnName NOT NULL;
+ SELECT * FROM tab;
+ SELECT * FROM all_tables;
+ SELECT * FROM user_tables;
+ SELECT * FROM user_tab_cols; ----to get the columns of user_tables.
+ Connect to Mysql:
+ mysql -u retail_user -password
+ Syntax oracle: order_item _subtotal NUMBER(8,2) --> this is storing float. which means 8 digits with 2 floating point numbers
+ Select * FROM user_indexes;
+ 
+ ALTER TABLE order_items ADD CONSTRAINT order_items_pk PRIMARY KEY (order_item_id);
+ ALTER TABLE order_items ADD CONSTRAINT order_items_fk FOREIGN KEY (order_item_order_id) REFERENCES orders(order_id);
+ SELECT * FROM user_constraints;
+ SELECT sysdate FROM dual;
+ 
+=========CLASS 15==========
+ ==============CLASS16===============

@@ -1,0 +1,3 @@
+1. Scala sample examples on iterators
+-> Externalize properties using typesafe config
+-> Spark properties and property files

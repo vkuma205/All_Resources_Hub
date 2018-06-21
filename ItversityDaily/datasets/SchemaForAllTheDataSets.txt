@@ -1,0 +1,45 @@
+Hive-Sql-Joins:
+retail_db have 6 tables
+departments
+categories
+products
+orders
+order_items
+customers
+
+Get rank of each category by revenue with in each department generated from all the transactions
+-->Display the results by deparment_name and rank in ascending order
+===============
+categories:
+category_id             int
+category_department_id  int
+category_name           string
+===
+departments:
+department_id           int
+department_name         string
+===
+orders;68896
+order_id                int
+order_date              string
+order_customer_id       int
+order_status            string
+====
+order_items:
+order_item_id           int
+order_item_order_id     int
+order_item_product_id   int
+order_item_quantity     int
+order_item_subtotal     float
+order_item_product_price        float
+======
+products:
+product_id              int
+product_category_id     int
+product_name            string
+product_description     string
+product_price           float
+product_image           string
+Reference:
+https://github.com/AndresUrregoAngel/HDPCD/blob/master/Hive/Exercise_15
+https://github.com/AndresUrregoAngel/HDPCD/blob/master/Hive/Sept012017

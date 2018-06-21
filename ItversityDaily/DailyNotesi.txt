@@ -1,0 +1,5 @@
+
+1. dataframes-spark-sql-hivecontext.
+2.https://www.youtube.com/watch?v=5YWRQk__xgU&list=PLf0swTFhTI8rVDf94eqeRmezl6sUBrxPg   -------------HiveTraining
+3.http://www.itversity.com/lessons/cca-hive-databases-scala/ -------------HiveDatabases.
+4. http://www.itversity.com/lessons/building-data-pipelines-flume-kafka-and-spark-streaming/

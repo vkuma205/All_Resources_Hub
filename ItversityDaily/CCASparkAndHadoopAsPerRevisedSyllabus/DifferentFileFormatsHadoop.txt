@@ -1,0 +1,53 @@
+https://www.youtube.com/watch?time_continue=1764&v=DfaSzkhaF0o----------------->fileformats link
+Password: ka1Tu|es7efah6nie9ooVohngae6doin
+spark-shell --master yarn --conf spark.ui.port=54431
+
+https://github.com/dgadiraju/code/tree/master/hadoop/edw/cloudera/spark
+https://www.youtube.com/watch?v=QC1gFfTwrhM&index=25&list=PLf0swTFhTI8q0x0V1E6We5zBQ9UazHFY0
+
+
+case class Order(
+      order_id: Int,
+      order_date: String,
+      order_customer_id: Int,
+      order_status: String)
+	  
+val orders = sc.textFile("/public/retail_db/orders")
+val ordersMap = orders.map(rec => {
+val r = rec.split(",")
+Order(r(0).toInt, r(1), r(2).toInt, r(3))})
+
+val ordersDF = ordersMap.toDF()
+ordersDF.take(10).foreach(println)
+ordersDF.show()
+ordersDF.printSchema()
+ ordersDF.write.parquet("/user/vinodkumargardas/orders_parquet")
+  ordersDF.write.toJSON("/user/vinodkumargardas/orders_json")
+  
+  ordersDF.registerTempTable("ordersTempData")
+  import sqlContext.implicits._
+  sqlContext.sql("select * from ordersTempData limit 10").show
+  val ordersByStatus = sqlContext.sql("select order_status, count(1) count_by_status from ordersTempData group by order_status")
+ordersByStatus.write.json("/user/vinodkumargardas/orders_by_status_Json")
+sqlContext.read.json("/user/vinodkumargardas/orders_by_status_Json").show()
+sqlContext.read.json("/user/vinodkumargardas/orders_by_status_Json").registerTempTable("x")
+sqlContext.sql("select * from x").show()
+
+for parquet, avro and Orc we have codec not for Json.
+sqlContext.setConf("spark.sql.parquet.compression.codec", "snappy")
+sqlContext.getConf("spark.sql.parquet.compression.codec", "snappy")
+
+
+  
+ 
+
+  
+  
+  
+
+
+
+
+
+	  
+

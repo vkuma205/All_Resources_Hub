@@ -1,0 +1,70 @@
+
+  ======================
+val ordersrdd = sc.textFile("hdfs:///user/vinodkumargardas/data/retail_db/orders/p*") 
+ val ordersMap = ordersrdd.map(rec => {
+    val a = rec.split(","); (a(0).toInt, a(1).toString(), a(2).toInt, a(3).toString())
+  })
+  case class Orders(
+                   order_id: Int,
+                   order_date: String,
+                   order_customer_id: Int,
+                   order_status: String);
+
+	val ordersDF = ordersMap.map(x => Orders(x._1,x._2,x._3,x._4)).toDF();
+	val ordersFiltered = ordersDF.filter(ordersDF("order_status") === "COMPLETE")
+	ordersFiltered.select("order_id").show()
+	
+	
+	// Register DF as temp table
+ordersDF.registerTempTable("orders")
+
+// Run query
+sqlContext.sql("select * from orders where order_status = 'COMPLETE' limit 10").
+  foreach(println)
+	================================
+	Problem statement
+compute total revenue for each day for completed orders
+get results in ascending order by date
+
+val orders = sc.textFile("hdfs:///user/vinodkumargardas/data/retail_db/orders/p*")
+case class Orders(
+                   order_id: Int,
+                   order_date: String,
+                   order_customer_id: Int,
+                   order_status: String);
+val ordersDF =  orders.map(rec => {
+        val a = rec.split(",")
+        Orders(a(0).toInt, a(1).toString(), a(2).toInt, a(3).toString())
+      }).toDF()
+val orderItems = sc.textFile("hdfs:///user/vinodkumargardas/data/retail_db/order_items/p*")
+case class OrderItems(
+
+
+)
+	
+	
+	val orderItemsDF = orderItems.
+      map(rec => {
+        val a = rec.split(",")
+        OrderItems(
+          a(0).toInt,
+          a(1).toInt,
+          a(2).toInt,
+          a(3).toInt,
+          a(4).toFloat,
+          a(5).toFloat)
+      }).toDF()
+
+    val ordersFiltered = ordersDF.
+      filter(ordersDF("order_status") === "COMPLETE")
+    val ordersJoin = ordersFiltered.join(orderItemsDF,
+      ordersFiltered("order_id") === orderItemsDF("order_item_order_id"))
+
+    ordersJoin.
+      groupBy("order_date").
+      agg(sum("order_item_subtotal")).
+      sort("order_date").
+      rdd.
+      saveAsTextFile(outputPath)
+  }
+}

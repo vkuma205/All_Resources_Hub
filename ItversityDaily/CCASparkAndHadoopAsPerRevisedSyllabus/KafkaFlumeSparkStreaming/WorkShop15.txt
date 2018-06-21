@@ -1,0 +1,10 @@
+RDD: RDD is a Static inmemory distributed collection.
+Dstream: Dstream is a Discrite or Dynamic inmemory distributed collection as it receives the data in continous manner.
+FLume: Flume is a demon process which is consisting of source, channel and sink.
+==========================================WorkShop17==============
+import org.apache.spark.SparkConf
+import org.apache.spark.streaming.StreamingContext
+val conf = new SparkConf().setAppName("Spark Streaming")
+val ssc = new StreamingContext(conf, org.apache.spark.streaming.Seconds(60))
+val lines = ssc.socketTextStream("gw01.itversity.com", 44444)
+ssc.start()

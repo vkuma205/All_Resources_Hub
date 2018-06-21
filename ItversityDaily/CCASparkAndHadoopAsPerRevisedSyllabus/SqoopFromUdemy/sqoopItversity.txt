@@ -1,0 +1,190 @@
+CCA-175 DataIngest -Sqoop.
+-> The skills to transfer data between external systems and your cluster. This includes the following:
+             1. Import data from a mysql database into HDFS using sqoop.
+			 2. Export data to Mysql database from HDFS using sqoop.
+			 3. Change the delimiter and file format of data during import using sqoop.
+			 4. 
+			 
+			 ======================
+			 mysql -u retail_user -h ms.itversity.com -p
+			 password: itversity 
+			 
+	Sqoop version
+	sqoop help
+	
+	sqoop list-databases \
+	      --connect jdbc:mysql://ms.itversity.com:3306 \
+		  --username retail_user \
+		  --password itversity
+	
+	sqoop list-tables \
+          --connect jdbc:mysql://ms.itversity.com:3306/retail_db \
+          --username retail_user \
+          --password itversity
+		  
+	=====================video 35====Run queries in Mysql using eval======
+	Run queries in mysql using eval.
+	
+	sqoop eval \
+	      --connect jdbc:mysql://ms.itversity.com:3306/retail_db \
+		  --username retail_user \
+		  --password itversity \
+		  --query "SELECT * FROM orders LIMIT 10"
+		  ==================
+		sqoop eval \
+	      --connect jdbc:mysql://ms.itversity.com:3306/retail_db \
+		  --username retail_user \
+		  --password itversity \
+		  --query "INSERT INTO orders VALUES (10000, '2017-10-31 00:00:00.0', 10000, 'DUMMY')"
+		  
+		  =====================
+		  
+	sqoop eval \
+	      --connect jdbc:mysql://ms.itversity.com:3306/retail_db \
+		  --username retail_user \
+		  --password itversity \
+		  --query "CREATE TABLE dummy (i INT)"
+		  
+	sqoop eval \
+	      --connect jdbc:mysql://ms.itversity.com:3306/retail_db \
+		  --username retail_user \
+		  --password itversity \
+		  --query "INSERT INTO dummy VALUES (1)"
+
+======================
+	sqoop import \
+	--connect jdbc:mysql://ms.itversity.com:3306/retail_db \
+	--username retail_user \
+	--password itversity \
+	--table order_items \
+	--warehouse-dir /user/vinodkumargardas/sqoop_import/retail_db
+	===================
+	The default behaviour of sqoop import is, what ever the data you are copied to target directory will be delimited by comma.
+	===================video 37. Sqoop import -Execution life cycle==============
+	By Default sqoop uses 4 threads. i.e 4 mappers.
+	sqoop import \
+	--connect jdbc:mysql://ms.itversity.com:3306/retail_db \
+	--username retail_user \
+	--password itversity \
+	--table order_items \
+	--warehouse-dir /user/vinodkumargardas/sqoop_import/retail_db \
+	--num-mappers 1 \
+	--delete-target-dir
+	
+	=====================
+	We need to be exteremly careful if we want to increase or decrese the no. of mappers in the sqoop command.
+	We cannot blindly increse the no. of mappers in the sqoop command, it affects the source data.
+	==================video 38. Sqoop import -Managing directories============
+	sqoop import \
+	--connect jdbc:mysql://ms.itversity.com:3306/retail_db \
+	--username retail_user \
+	--password itversity \
+	--table order_items \
+	--warehouse-dir /user/vinodkumargardas/sqoop_import/retail_db \
+	--num-mappers 1 \
+	--append
+	==================video 39. Sqoop import- Using split by =============
+	Things to remember for split by key:
+	   -> Column should be indexed for the performance reason.
+	   -> Values in the field should be sparsed.
+	   -> also often it should be sequence generated or evenly incremented.
+	   -> It should not have null values.
+		  
+	sqoop import \
+	--connect jdbc:mysql://ms.itversity.com:3306/retail_db \
+	--username retail_user \
+	--password itversity \
+	--table order_items_nopk \
+	--warehouse-dir /user/vinodkumargardas/sqoop_import/retail_db \
+    --split-by order_item_order_id
+	
+	======================Split by key on a string.======
+	sqoop import \
+	-Dorg.apache.sqoop.splitter.allow_text_splitter=true \
+	--connect jdbc:mysql://ms.itversity.com:3306/retail_db \
+	--username retail_user \
+	--password itversity \
+	--table orders \
+	--warehouse-dir /user/vinodkumargardas/sqoop_import/retail_db \
+    --split-by order_status
+	======================Video40.===Auto reset to one mapper=========
+	sqoop import \
+	--connect jdbc:mysql://ms.itversity.com:3306/retail_db \
+	--username retail_user \
+	--password itversity \
+	--table order_items_nopk \
+	--warehouse-dir /user/vinodkumargardas/sqoop_import/retail_db \
+	--autoreset-to-one-mapper
+	============Video 41============FileFormats=========
+	Default file format in sqoop is textfile.
+	Text file.
+	avro format- Binary Json Format.
+	parquet format - Columanar File Format.
+	Sequence File: Normal Binary file format.
+	====================
+	sqoop import \
+	--connect jdbc:mysql://ms.itversity.com:3306/retail_db \
+	--username retail_user \
+	--password itversity \
+	--table order_items \
+	--warehouse-dir /user/vinodkumargardas/sqoop_import/retail_db \
+	--num-mappers 2 \
+	--as-sequencefile
+	=============================Video 42--Compression algorithms=============
+	Compression Algorithms:
+	  -> Gzip
+	  -> Deflate
+	  -> Snappy
+	  -> Others
+	  
+	 sqoop import \
+	--connect jdbc:mysql://ms.itversity.com:3306/retail_db \
+	--username retail_user \
+	--password itversity \
+	--table order_items \
+	--warehouse-dir /user/vinodkumargardas/sqoop_import/retail_db \
+	--num-mappers 2 \
+	--as-textfile \
+	--compress
+	
+	
+	If you want to unzip the file use: gunzip part*.gz
+	view part 00000 --for viewing the data in file.
+	In sqoop the default codec is gzip
+	
+	sqoop import \
+	--connect jdbc:mysql://ms.itversity.com:3306/retail_db \
+	--username retail_user \
+	--password itversity \
+	--table order_items \
+	--warehouse-dir /user/vinodkumargardas/sqoop_import/retail_db \
+	--num-mappers 2 \
+	--as-textfile \
+	--compress \
+	--compression-codec org.apache.hadoop.io.compress.SnappyCodec
+	
+	=============Video 43=======
+	Using Boundary Query.
+		sqoop import \
+	--connect jdbc:mysql://ms.itversity.com:3306/retail_db \
+	--username retail_user \
+	--password itversity \
+	--table order_items \
+	--warehouse-dir /user/vinodkumargardas/sqoop_import/retail_db \
+	--boundary-query 'select min(order_item_id), max(order_item_id) from order_items where order_item_id > 99999'
+	
+	
+	This will return a row with min and max record.
+	================Video 44===Columns and Query=============
+	-> Transformations and Filtering.
+	-> 
+	sqoop import \
+	--connect jdbc:mysql://ms.itversity.com:3306/retail_db \
+	--username retail_user \
+	--password itversity \
+	--table order_items \
+	--columns order_item_order_id,order_item_id,order_item_subtotal \
+	--warehouse-dir /user/vinodkumargardas/sqoop_import/retail_db \
+	--num-mappers 2
+	============
+	

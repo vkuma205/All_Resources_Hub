@@ -1,0 +1,29 @@
+DDL, DML and Hive QL.
+Partitioning Type's in Traditional Rdbms:
+List, Hash, range and have nested partioning types such as List_list or List-Hash or List-range etc..
+==================
+show create table orders;
+o/p:
+CREATE TABLE orders_partitioned_by_status(
+order_id int,
+order_date string,
+order_customer_id int)
+PARTITIONED BY (order_status string)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS INPUTFORMAT
+  'org.apache.hadoop.mapred.TextInputFormat'
+OUTPUTFORMAT
+  'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat'
+LOCATION
+  'hdfs://nn01.itversity.com:8020/apps/hive/warehouse/gardasdatabase.db/orders'
+=============================
+Two types of partitioning on tables.
+1. Static Partitioning. 
+example: alter table orders_partitioned_by_status add partition (order_status='COMPLETE');
+alter table orders_partitioned_by_status add partition (order_status='CLOSED');
+2. Dynamic partitioning.
+example: 
+
+insert into table orders_partitioned_by_status partition (order_status='COMPLETE')
+select order_id, order_date, order_customer_id from orders where order_status='COMPLETE';

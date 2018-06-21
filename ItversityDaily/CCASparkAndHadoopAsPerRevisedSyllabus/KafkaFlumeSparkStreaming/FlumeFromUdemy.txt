@@ -1,0 +1,34 @@
+Section7:
+DataIngest-RealTime,NearRealTime and Streaming Analytics.
+Flume GEtting Started:
+go to wslogstohdfs:
+flume-ng agent -n wh -f /home/vinodkumargardas/wslogstohdfs/wshdfs.conf -------command for starting the flume agent.
+cd /etc/hadoop/conf
+
+==========================
+Ingesting data to HDFS -flume.
+Section-7: Webserver logs to HDFS-sink Hdfs.
+-> Get data from webserver logs to HDFS.
+-> Source-exec
+-> Sink-HDFS
+-> Channel-Memory
+
+
+cd /etc/hadoop/conf ---------> where you have property for hadoop.
+set -o vi
+flume-ng agent -n wh -f /home/vinodkumargardas/wslogstohdfs/flumehdfs.conf
+flume-ng agent -n wh -f /home/vinodkumargardas/wslogstohdfs/flumehdfs02.conf
+
+These are the hdfs properties we need to set to reach the threshold.
+hdfs.rollinterval = 30 ---> no. of seconds to wait before rolling current file
+hdfs.rollsize = 1024  ---> file size to trigger roll, in bytes
+hdfs.rollcount = 10  --> no. of events written to file before it rolled.
+hdfs.fileType = sequence file or commpressed file.
+====================================
+Memory Channel.
+Life cycleof implimentation of simple Agent,where data is read from source which is the webserver logs using 
+exec and channel through memory and return to HDFS.
+===================
+
+
+

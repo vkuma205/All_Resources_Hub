@@ -1,0 +1,36 @@
+1. Worked on different file formats such as sequence, csv, avro and parquet.
+2. Regular expressions in perl, scala.
+3. Lambda Expressions.
+3. Case classes.
+4. ShellScript:
+Sed, awk, curl commands. mailx.
+---> Unit Testing 
+---> Worked on data compression using Snappy with spark SQL.
+4. Developing the oozie workflows.
+-->SparkScala application which reads the data from hive queries, application transformations and actions, convert to .csv or tab delimited file and load to HDFS.
+--> Hive queries. Created external tables. and worked on perl script which reads the data from Local and loads into external tables.
+    Oozie workFlow which loads all the data from external tables into Parquet tables.
+5. Worked on different kinds of data, Structured and semi structured.
+Insert overWrite and partitioning on the update date in handling the incremental data loads.
+=================================UHG================
+Joining the xml data with the data in Hive using keys. convert to Json format load into Elastic search.
+Loads the data into Rdd, Reading the data from rdd, covert to csv or tab delimited.
+converted rdd's to Df's and writes to json.
+Worked on Map, FlatMap, ReducedByKey etc.
+Accumulator's and broadcast variables.
+Partitioning the rdd's data across the cluster.
+.persist.
+Joins. Cartesian Join and cross join's.
+Choose the no. of partitions = no. of core's to optimize the spark jobs.
+Hashpartitioning and Range partitioning.
+================================================== 	
+Worked on DataDriven and test driven development.
+->Worked on implementing the high-throughput data pipelines
+->Build fault-tolerant, scalable batch and real-time distributed data processing systems using Hive, Map-Reduce, Tez, HBase, Java/Python, Kafka, Spark etc.
+-> worked on optimizing the spark applications and Hive queries. 
+We use agile development techniques such as test-driven development, pair-programming, continuous build and automated testing, adapting these to our needs as necessary at regularly held retrospectives involving developers, operators, support staff, and product owners.
+Producing technical designs and documentation at varying levels of granularity
+Experience developing service-oriented architectures and an understanding of design for scalability, performance and reliability.
+ Familiarity with data serialization formats like XML, JSON and protocol buffers
+ ===================================
+ 

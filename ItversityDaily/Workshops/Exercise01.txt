@@ -1,0 +1,5 @@
+Reference:
+http://discuss.itversity.com/t/exercise-01-get-monthly-crime-count-by-type/7846
+
+Solution:
+https://gist.github.com/dgadiraju/0c81b0cdae330274fe260bf446108b38

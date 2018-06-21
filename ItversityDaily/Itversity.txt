@@ -1,0 +1,205 @@
+pyspark --master yarn --conf spark.ui.port=12562 \
+ --executor-memory 2G \
+ --num-executors 1
+
+orders = sc.textFile("/public/retail_db/orders")
+orders.first()
+for order in orders.take(10): print(order)
+for order in orders.collect(): print(order)
+orders.count()
+
+ordersStatus = orders.map(lambda order: order.split(",")[3])
+for orderStatus in ordersStatus.collect(): print(ordersStatus)
+
+#filtering the data with Accumulators
+ordersCompletedCount = sc.accumulator(0)
+ordersNonCompletedCount = sc.accumulator(0)
+
+def isComplete(order, ordersCompletedCount, ordersNonCompletedCount):
+ isCompleted = order.split(",")[3] == "COMPLETE" or order.split(",")[3] == "CLOSED"
+ if(isCompleted): ordersCompletedCount = ordersCompletedCount.add(1)
+ else: ordersNonCompletedCount.add(1)
+ return isCompleted
+
+ordersFiltered = orders.\
+filter(lambda order: isComplete(order, ordersCompletedCount, ordersNonCompletedCount))
+ordersFiltered.count()
+ordersCompletedCount.value
+ordersNonCompletedCount.value
+
+=====================================================Converting to Key Value pairs===========================================
+
+# Converting to key value pairs for orders and orderItems
+ordersMap = ordersFiltered.\
+map(lambda order: (int(order.split(",")[0]), order.split(",")[1]))
+
+orderItems = sc.textFile("/public/retail_db/order_items")
+orderItemsMap = orderItems.\
+map(lambda orderItem:
+ (int(orderItem.split(",")[1]), (int(orderItem.split(",")[2]), float(orderItem.split(",")[4])))
+)
+
+=====================================================JOINING THE DATA SETS- JOIN AND OUTER JOIN==================================
+
+
+
+(1, u'2013-07-25 00:00:00.0') ----ordersMap.first()
+(1, (957, 299.98)) ---orderItemsMap.first()
+(65536, (u'2014-05-16 00:00:00.0', (957, 299.98))) ---ordersLeftOuterJoin.first()
+ordersLeftOuterJoin = ordersMap.leftOuterJoin(orderItemsMap)
+
+ordersWithNoOrderItems = ordersLeftOuterJoin.\
+  filter(lambda order:
+   order[1][1] == None
+  )
+for i in ordersWithNoOrderItems.take(100): print(i)
+
+ordersRightOuterJoin = orderItemsMap.rightOuterJoin(ordersMap)
+for i in ordersRightOuterJoin.take(100): print(i)
+
+======================================================AGGREGATING THE Data-reduceByKey=============================================
+# computing daily revenue per product
+ordersJoinMap = ordersJoin.\
+ map(lambda r: ((r[1][0], r[1][1][0]), r[1][1][1])) 
+
+dailyRevenuePerProductId = ordersJoinMap.\
+ reduceByKey(lambda total, revenue: total + revenue)
+
+=============================================================SparkExecutionLifeCycle===================================================
+
+
+# Computing daily revenue and daily count per product
+dailyRevenueAndCountPerProductId = ordersJoinMap.\
+ aggregateByKey((0.0, 0),
+ lambda inter, revenue: (inter[0] + revenue, inter[1] + 1),
+ lambda final, inter: (final[0] + inter[0], final[1] + inter[1])
+)
+
+# Get daily revenue per product using join
+products = open("/data/retail_db/products/part-ooooo").read().splitlines()
+productsRDD = sc.parallelize(products)
+productsMap = productsRDD.map(lambda product: (int(product.split(",")[0]), product.split(",")[2]))
+dailyRevenuePerProductIdMap = dailyRevenuePerProductId.map(lambda rec: (rec[0][1], (rec[0][0], rec[1])))
+
+dailyRevenuePerProductJoinProductsMap = dailyRevenuePerProductIdMap.join(productsMap)
+dailyRevenuePerProductName = dailyRevenuePerProductJoinProductsMap.map(lambda rec: rec[1])
+ 
+
+
+============================================================CoreSpark-BroadCastVariables==================================================================================
+
+
+>>> print(dailyRevenuePerProductId.toDebugString())
+
+(4) PythonRDD[49] at RDD at PythonRDD.scala:43 []
+ |  MapPartitionsRDD[47] at mapPartitions at PythonRDD.scala:374 []
+ |  ShuffledRDD[46] at partitionBy at NativeMethodAccessorImpl.java:-2 []
+ +-(4) PairwiseRDD[45] at reduceByKey at <stdin>:2 []
+    |  PythonRDD[44] at reduceByKey at <stdin>:2 []
+    |  MapPartitionsRDD[12] at mapPartitions at PythonRDD.scala:374 []
+    |  ShuffledRDD[11] at partitionBy at NativeMethodAccessorImpl.java:-2 []
+    +-(4) PairwiseRDD[10] at join at <stdin>:1 []
+       |  PythonRDD[9] at join at <stdin>:1 []
+       |  UnionRDD[8] at union at NativeMethodAccessorImpl.java:-2 []
+       |  PythonRDD[6] at RDD at PythonRDD.scala:43 []
+       |  /public/retail_db/orders MapPartitionsRDD[1] at textFile at NativeMethodAccessorImpl.java:-2 []
+       |  /public/retail_db/orders HadoopRDD[0] at textFile at NativeMethodAccessorImpl.java:-2 []
+       |  PythonRDD[7] at RDD at PythonRDD.scala:43 []
+       |  /public/retail_db/order_items MapPartitionsRDD[3] at textFile at NativeMethodAccessorImpl.java:-2 []
+       |  /public/retail_db/order_items HadoopRDD[2] at textFile at NativeMethodAccessorImpl.java:-2 []
+>>> 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+===============================Spark SQL-create Hive Tables- Text File Format =========================
+  create database vinodGardas_retail_db_txt;
+use vinodGardas_retail_db_txt;
+> create table orders (
+                                >  order_id int,
+                                >  order_date string,
+                                >  order_customer_id int,
+                                >  order_status string
+                                > ) row format delimited fields terminated by ','
+                                > stored as textfile;
+show tables;
+select * from orders limit 10;
+load data local inpath '/data/retail_db/orders' into table orders;
+select * from orders limit 10;
+
+
+create table order_items (
+                                >  order_item_id int,
+                                >  order_item_order_id int,
+                                >  order_item_product_id int,
+                                >  order_item_quantity int,
+                                >  order_item_subtotal float,
+                                >  order_item_product_price float
+                                > ) row format delimited fields terminated by ','
+                                > stored as textfile;
+
+load data local inpath '/data/retail_db/order_items' into table order_items;
+select * from order_items limit 10;
+
+=======================================Create Database and Tables-ORC File Format================================
+
+create database vinodGardas_retail_db_orc;
+use vinodGardas_retail_db_orc;
+
+ create table orders (
+                        order_id int,
+                                >  order_date string,
+                                >  order_customer_id int,
+                                >  order_status string
+                                > ) row format delimited fields terminated by ','
+                                > stored as orc;
+ insert into table orders select * from vinodgardas_retail_db_txt.orders;
+  create table order_items (
+                             order_item_id int,
+                             order_item_order_id int,
+                             order_item_product_id int,
+                             order_item_quantity int,
+                             order_item_subtotal float,
+                             order_item_product_price float
+                            ) stored as orc;
+insert into table order_items select * from vinodgardas_retail_db_txt.order_items;
+select * from order_items limit 10;
+describe orders;
+describe formatted orders;
+===================================
+
+sqlContext.sql("use vinodGardas_retail_db_orc");
+sqlContext.sql("show tables").show()
+sqlContext.sql("describe formatted order_items").show()
+for i in sqlContext.sql("describe formatted order_items").collect(): print(i)
+sqlContext.sql("select * from order_items limit 10").show()
+
+=========================================Spark-Sql Functions Getting Started==================
+==============Spark SQl-Functions-Manipulating Strings====================
+substr or substring
+instr
+like
+rlike
+length
+lcase or lower
+ucase or upper
+initcap
+trim, ltrim, rtrim
+lpad, rpad
+split
+
+hive login
+use vinodgardas_retail_db_txt;
+describe function substr;

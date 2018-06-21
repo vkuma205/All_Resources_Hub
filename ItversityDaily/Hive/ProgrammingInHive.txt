@@ -1,0 +1,194 @@
+Chapter-4
+CREATE DATABASE financials;
+CREATE DATABASE IF NOT EXISTS financials;
+SHOW DATABASES;
+SHOW DATABASES LIKE 'gardas.*';  -----------using the regex
+
+set hive.metastore.warehouse.dir;  ------which gives the location of the databases in hdfs.
+DESCRIBE DATABASE EXTENDED financialsvinod;
+USE financialsvinod;
+SHOW TABLES;
+set hive.cli.print.current.db=true; ------to show the current database.
+USE default; ------> which uses the default database.
+DROP DATABASE IF EXISTS financials CASCADE; --------> this allows to drop the  database which has the tables in it.
+ALTER DATABASE gardasdatabase SET DBPROPERTIES ('edited-by' = 'vinodkumargardas');
+There is no way delete or unset the  DB properties.
+
+=================================CREATING MANAGED TABLES=================
+CREATE TABLE IF NOT EXISTS gardasdatabase.employees (
+name STRING COMMENT 'Employee name',
+salary FLOAT COMMENT 'Employee salary',
+subordinates ARRAY<STRING> COMMENT 'Names of subordinates',
+deductions MAP<STRING, FLOAT> COMMENT 'Keys are deductions names, values are percentages',
+address STRUCT<street:STRING, city:STRING, state:STRING, zip:INT> COMMENT 'Home address')
+COMMENT 'Description of the table'
+TBLPROPERTIES ('creator'='me', 'created_at'='2012-01-02 10:00:00');
+========================================================================
+//copy the schema of an existing table.
+CREATE TABLE IF NOT EXISTS mydb.employees2
+LIKE mydb.employees;
+=================
+USE default;
+SHOW TABLES IN gardasdatabase; ----> we can still see the tables in other database.
+SHOW TABLES 'empl.*'; ------> regex.
+DESCRIBE EXTENDED gardasdatabase.employees
+DESCRIBE FORMATTED gardasdatabase.employees;
+===================================================
+CREATE EXTERNAL TABLE IF NOT EXISTS stocks (
+exchange1 STRING,
+symbol STRING,
+ymd STRING,
+price_open FLOAT,
+price_high FLOAT,
+price_low FLOAT,
+price_close FLOAT,
+volume INT,
+price_adj_close FLOAT)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
+STORED AS TEXTFILE
+LOCATION '/user/vinodkumargardas/tobeDeleted';
+=============
+absdscd,ansd,ahskak,1.2,1.29,1.8,1.8,9,1.9
+abcd,ansdsd,ahskak,11.2,1.9,1.8,1.8,9,1.9
+abcd,ansd,ahskaaksk,1.2,1.9,1.28,1.8,9,1.9
+abcd,anksdsd,ahskak,1.32,1.9,1.8,1.8,9,1.9
+abcdasd,ansd,ahskak,1.2,1.9,1.8,1.8,9,1.4
+=======================
+CREATE EXTERNAL TABLE IF NOT EXISTS gardasdatabase.stocksTest
+LIKE gardasdatabase.stocks
+LOCATION '/user/vinodkumargardas/tobeDeleted';
+=========================
+SELECT e.name, e.salary FROM employees e LIMIT 100;
+SHOW PARTITIONS employees;
+===============================
+CREATE TABLE employees (
+name STRING,
+salary FLOAT,
+subordinates ARRAY<STRING>,
+deductions MAP<STRING, FLOAT>,
+address STRUCT<street:STRING, city:STRING, state:STRING, zip:INT>
+)
+PARTITIONED BY (country STRING, state STRING);
+==============================
+CREATE EXTERNAl TABLE IF NOT EXISTS employees (
+name STRING,
+salary FLOAT,
+subordinates ARRAY<STRING>,
+deductions MAP<STRING, FLOAT>,
+address STRUCT<street:STRING, city:STRING, state:STRING, zip:INT>
+)
+LOCATION '/user/vinodkumargardas/tobeDeleted';
+=====================
+LOAD DATA LOCAL INPATH '${env:HOME}/california-employees'
+INTO TABLE employees
+PARTITION (country = 'US', state = 'CA');
+========================
+CREATE EXTERNAL TABLE IF NOT EXISTS log_messages (
+hms INT,
+severity STRING,
+server STRING,
+process_id INT,
+message STRING)
+PARTITIONED BY (year INT, month INT, day INT)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+==================================
+CREATE TABLE employees (
+name STRING,
+salary FLOAT,
+subordinates ARRAY<STRING>,
+deductions MAP<STRING, FLOAT>,
+address STRUCT<street:STRING, city:STRING, state:STRING, zip:INT>
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '\001'
+COLLECTION ITEMS TERMINATED BY '\002'
+MAP KEYS TERMINATED BY '\003'
+LINES TERMINATED BY '\n'
+STORED AS TEXTFILE;
+==============================
+CREATE TABLE kst
+PARTITIONED BY (ds string)
+ROW FORMAT SERDE 'com.linkedin.haivvreo.AvroSerDe'
+WITH SERDEPROPERTIES ('schema.url'='http://schema_provider/kst.avsc')
+STORED AS
+INPUTFORMAT 'com.linkedin.haivvreo.AvroContainerInputFormat'
+OUTPUTFORMAT 'com.linkedin.haivvreo.AvroContainerOutputFormat';
+==========================
+CREATE EXTERNAL TABLE IF NOT EXISTS stocks (
+exchange1 STRING,
+symbol STRING,
+ymd STRING,
+price_open FLOAT,
+price_high FLOAT,
+price_low FLOAT,
+price_close FLOAT,
+volume INT,
+price_adj_close FLOAT)
+CLUSTERED BY (exchange1, symbol)
+SORTED BY (ymd ASC)
+INTO 96 BUCKETS
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
+LOCATION '/user/vinodkumargardas/tobeDeleted';
+==============================
+ALTER TABLE log_messages RENAME TO logmsgs;
+=======================
+ALTER TABLE log_messages ADD COLUMNS (
+app_name STRING COMMENT 'Application name',
+session_id LONG COMMENT 'The current session id');
+=================
+ALTER TABLE log_messages REPLACE COLUMNS (
+hours_mins_secs INT COMMENT 'hour, minute, seconds from timestamp',
+severity STRING COMMENT 'The message severity'
+message STRING COMMENT 'The rest of the message');
+===================
+//Alter Table properties
+ALTER TABLE log_messages SET TBLPROPERTIES (
+'notes' = 'The process id is no longer captured; this column is always NULL');
+===============
+ALTER TABLE stocks
+CLUSTERED BY (exchange, symbol)
+SORTED BY (symbol)
+INTO 48 BUCKETS;
+======================================CHAPTER5===============
+//Inserting Data Into Tables From Queries.
+INSERT OVERWRITE TABLE employees
+PARTITION (country = 'US', state = 'OR')
+SELECT * FROM staged_employees se
+WHERE se.cnty = 'US' AND se.st = 'OR';
+=====================
+FROM staged_employees se
+INSERT OVERWRITE TABLE employees
+PARTITION (country = 'US', state = 'OR')
+SELECT * WHERE se.cnty = 'US' AND se.st = 'OR'
+INSERT OVERWRITE TABLE employees
+PARTITION (country = 'US', state = 'CA')
+SELECT * WHERE se.cnty = 'US' AND se.st = 'CA'
+INSERT OVERWRITE TABLE employees
+PARTITION (country = 'US', state = 'IL')
+SELECT * WHERE se.cnty = 'US' AND se.st = 'IL';
+=============
+we can replace OVERWRITE with INTO but it will append to the table data.
+=========
+CREATE TABLE ca_employees
+AS SELECT name, salary, address
+FROM employees
+WHERE se.state = 'CA';
+=============
+//Deleting all the data.
+//Not working.
+INSERT INTO LOCAL DIRECTORY '/home/vinodkumargardas/tobedeleted'
+SELECT name, salary, address
+FROM employees s
+WHERE s.name = 'Todd Jones';
+====================================CHAPTER6=============HIVEQL:QUERIES===========
+CREATE TABLE employees (
+name STRING,
+salary FLOAT,
+subordinates ARRAY<STRING>,
+deductions MAP<STRING, FLOAT>,
+address STRUCT<street:STRING, city:STRING, state:STRING, zip:INT>
+)
+PARTITIONED BY (country STRING, state STRING);
+====
+SELECT upper(category_name), category_id, round(category_id * (1 - category_department_id)) FROM categories LIMIT 10;
+=====page 85======

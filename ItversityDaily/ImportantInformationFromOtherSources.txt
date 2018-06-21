@@ -1,0 +1,56 @@
+DatFrames DataSets and Sql
+val sc: SparkContext // An existing SparkContext.
+val sqlContext = new org.apache.spark.sql.SQLContext(sc)
+
+val df = sqlContext.read.json("examples/src/main/resources/people.json")
+
+df.show()
+df.printSchema()
+df.select("name").show()
+df.select(df("name"), df("age") + 1).show()
+df.filter(df("age") > 21).show()
+df.groupBy("age").count().show()
+val sqlContext = ... // An existing SQLContext
+val df = sqlContext.sql("SELECT * FROM table")
+==============Inferring the Schema Using Reflection=================
+val sqlContext = new org.apache.spark.sql.SQLContext(sc)
+import sqlContext.implicits._
+case class Person(name: String, age: Int)
+val people = sc.textFile("examples/src/main/resources/people.txt").map(_.split(",")).map(p => Person(p(0), p(1).trim.toInt)).toDF()
+people.registerTempTable("people")
+val teenagers = sqlContext.sql("SELECT name, age FROM people WHERE age >= 13 AND age <= 19")
+===================================
+Partitions:
+By Default partitions are equal to total number of cores on all executor nodes.
+Partitioning Data:
+val pairs = purchasesRdd.map(p => (p.customerId, p.price))
+val tunedPartitioner = new RangePartitioner(8, pairs)
+val partitioned = pairs.partitionBy(tunedpartitioner).persist()
+===========
+rdd.partitions.length---------> give the no. of partions.
+var nums = 1 to 10;
+var numsRdd = sc.parallelize(nums)
+numsRdd.saveAsTextFile("numsRdd-handson")
+var kvrdd = numsRdd.map((_,1));
+Reference:
+https://www.youtube.com/watch?v=b7jE3WNX16U
+=========================
+One important way to increase parallelism of spark processing is to increase the number of executors on the cluster.
+Reference:
+https://www.dezyre.com/article/how-data-partitioning-in-spark-helps-achieve-more-parallelism/297
+===============================
+Memory Tuning In Spark:
+=======================
+rdd.partition.length
+ rdd.glom().collect() ---> this gets all the  elements of an rdd together and makes an array of elements.
+ When we do collect, it gets every thing into local memory
+ hash partition follows round robin fashion.
+ var prdd = kvrdd.partitionBy(new HashPartitioner(3));
+ then output would be:
+ Array(Array((3,1), (6,1), (9,1)), Array((1,1), (4,1), (7,1), (10,1)), Array((2,1), (5,1), (8,1)))---Did through Hash Partitioning.
+ it had divided into 3 partitions. in the first partition, element divided by no. of partionins reminder is 0,
+ in the second partition: element divided by no. of partitions(3) reminder is 1 and 
+ in the third partition: element divided by no. of partitions(3) reminded is 2
+ 
+ rdd.toDebugString
+=========================

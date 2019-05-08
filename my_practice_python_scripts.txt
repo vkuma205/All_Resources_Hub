@@ -1,0 +1,623 @@
+Jan 27 2019:
+HelloWorld.py
+import sys
+
+print('####Program is running with these arguments (' + ' '.join(sys.argv) + ')####')
+print('Program name is ' + sys.argv[0])
+print('Argument is ' + sys.argv[1])
+print('Hello ' + sys.argv[1])
+=============================================================
+
+pyspark-spark-sql.py
+orders = spark.read. \
+  schema("order_id INT, order_date STRING, order_customer_id INT, order_status STRING"). \
+  csv(
+    '/Users/itversity/Research/data/retail_db/orders/part-00000',
+  )
+
+orders.printSchema()
+orders.show()
+orders.show(truncate=False)
+
+orders.createTempView('orders')
+spark.sql('select * from orders').show()
+
+orderItems = spark. \
+  read. \
+  schema('''order_item_id INT, order_item_order_id INT, order_item_product_id INT, 
+         order_item_quantity INT, order_item_subtotal DOUBLE, order_item_product_price DOUBLE'''). \
+  csv(
+    '/Users/itversity/Research/data/retail_db/order_items/part-00000'
+  )
+
+orderItems.printSchema()
+orderItems.show(truncate=False)
+
+orderItems.createTempView('order_items')
+spark.sql('SELECT * FROM order_items').show()
+
+# Get count from orders
+spark.sql('SELECT count(1) AS order_count FROM orders').show()
+
+# Get count from orderItems
+spark.sql('SELECT count(1) AS order_item_count FROM order_items').show()
+
+# Get count by order_status from orders
+spark.sql('''
+  SELECT order_status, count(1) AS status_count
+  FROM orders
+  GROUP BY order_status
+''').show()
+
+
+# Get order revenue for given order_item_order_id from order_items
+spark.sql('''
+  SELECT sum(order_item_subtotal) AS order_revenue
+  FROM order_items
+  WHERE order_item_order_id = 2
+''').show()
+
+# Get revenue for each order_item_order_id from order_items
+spark.sql('''
+  SELECT order_item_order_id, round(sum(order_item_subtotal), 2) AS order_revenue
+  FROM order_items
+  GROUP BY order_item_order_id
+''').show()
+
+# Get revenue for each date by joining orders and order_items
+spark.sql('''
+  SELECT 
+    order_date, round(sum(order_item_subtotal), 2) AS order_revenue
+  FROM orders JOIN order_items
+    ON order_id = order_item_order_id
+  GROUP BY order_date
+''').show()
+
+# Sort order_items by order_item_order_id and then by order_item_subtotal descending
+spark.sql('''
+  SELECT *
+  FROM order_items
+  ORDER BY order_item_order_id, order_item_subtotal DESC
+''').show()
+=======================================================================
+ pyspark-data-frames-examples.py
+orders = spark.read.csv(
+  '/Users/itversity/Research/data/retail_db/orders/part-00000'
+). \
+toDF('order_id', 'order_date', 'order_customer_id', 'order_status')
+
+orders.printSchema() # Data Type of all the fields will be string
+
+orders = spark.read. \
+  schema("order_id INT, order_date STRING, order_customer_id INT, order_status STRING"). \
+  csv(
+    '/Users/itversity/Research/data/retail_db/orders/part-00000',
+  )
+
+orders.printSchema()
+orders.show()
+orders.show(truncate=False)
+
+orderItems = spark. \
+  read. \
+  schema('''order_item_id INT, order_item_order_id INT, order_item_product_id INT, 
+         order_item_quantity INT, order_item_subtotal DOUBLE, order_item_product_price DOUBLE'''). \
+  csv(
+    '/Users/itversity/Research/data/retail_db/order_items/part-00000'
+  )
+
+orderItems.printSchema()
+orderItems.show(truncate=False)
+
+# Get count from orders
+orders.count()
+
+# Get count from orderItems
+orderItems.count()
+
+# Get count by order_status from orders
+orders.groupby('order_status').count().show()
+
+from pyspark.sql.functions import count
+orders.groupby('order_status').agg(count('order_status').alias('status_count')).show()
+
+# Get order revenue for given order_item_order_id from order_items
+from pyspark.sql.functions import col, sum, round
+orderItems. \
+  filter(col('order_item_order_id') == 2). \
+  select('order_item_subtotal'). \
+  agg(sum('order_item_subtotal').alias('order_revenue')). \
+  show()
+
+# Get revenue for each order_item_order_id from order_items
+orderItems. \
+  groupby('order_item_order_id'). \
+  agg(round(sum('order_item_subtotal'), 2).alias('order_revenue')). \
+  show()
+
+# Get revenue for each date by joining orders and order_items
+orders.join(orderItems, orders['order_id'] == orderItems.order_item_order_id).show()
+orders. \
+  join(orderItems, orders['order_id'] == orderItems.order_item_order_id). \
+  groupby(orders.order_date). \
+  agg(round(sum('order_item_subtotal'), 2).alias('daily_revenue')). \
+  sort('order_date'). \
+  show()
+
+# Sort order_items by order_item_order_id and then by order_item_subtotal descending
+orderItems. \
+  sort(col('order_item_order_id'), col('order_item_subtotal').desc()). \
+  show()
+  ======================================================================
+pandas-examples.py
+import pandas as pd
+
+orders = pd.read_csv(
+  '/Users/itversity/Research/data/retail_db/orders/part-00000',
+  header=None,
+  names=['order_id', 'order_date', 'order_customer_id', 'order_status']
+)
+
+orderItems = pd.read_csv(
+  '/Users/itversity/Research/data/retail_db/order_items/part-00000',
+  header=None,
+  names=['order_item_id', 'order_item_order_id', 'order_item_product_id',
+         'order_item_quantity', 'order_item_subtotal', 'order_item_product_price']
+)
+
+# Get count from orders
+orders['order_id'].count()
+
+# Get count from orderItems
+orderItems['order_item_id'].count()
+
+# Get count by order_status from orders
+orders.groupby('order_status')['order_status'].count()
+orders.groupby('order_status')['order_status']. \
+  agg({ 'order_count_by_status' : 'count' })
+
+# Get order revenue for given order_item_order_id from order_items
+orderItems.loc[orderItems['order_item_order_id'] == 2]['order_item_subtotal'].sum()
+
+# Get revenue for each order_item_order_id from order_items
+orderItems. \
+  groupby('order_item_order_id')['order_item_subtotal']. \
+  agg({'order_revenue': 'sum'})
+ ===============================================================
+ 
+ solution01.py
+nyse = spark.read.csv(
+  '/mnt/c/data/nyse/nyse*.csv',
+  schema='stockTicker STRING, tradeDate STRING, openPrice DOUBLE, highPrice DOUBLE, lowPrice DOUBLE, closePrice DOUBLE, volume LONG'
+)
+ 
+nyse.printSchema()
+
+spark.conf.set('spark.sql.shuffle.partitions', '1')
+
+nyse.write.json('/mnt/c/solutions/output/11nyse_consolidated_json')
+ solution02.py
+nyse = spark.read.csv(
+  '/mnt/c/data/nyse/nyse*.csv',
+  schema='stockTicker STRING, tradeDate STRING, openPrice DOUBLE, highPrice DOUBLE, lowPrice DOUBLE, closePrice DOUBLE, volume LONG'
+)
+ 
+nyse.printSchema()
+
+spark.conf.set('spark.sql.shuffle.partitions', '1')
+
+nyse. \
+  select(substring(nyse.tradeDate, 8, 12).cast('int').alias('tradeYear'), nyse.tradeDate). \
+  groupBy('tradeYear'). \
+  agg(countDistinct('tradeDate').alias('tradeDays')). \
+  write. \
+  parquet('/mnt/c/solutions/output/12nyse_number_of_traded_days')
+ solution03.py
+nyse = spark.read.csv(
+  '/mnt/c/data/nyse/nyse*.csv',
+  schema='stockTicker STRING, tradeDate STRING, openPrice DOUBLE, highPrice DOUBLE, lowPrice DOUBLE, closePrice DOUBLE, volume LONG'
+)
+ 
+nyse.printSchema()
+
+spark.conf.set('spark.sql.shuffle.partitions', '1')
+
+nyse. \
+  select(substring(nyse.tradeDate, 8, 12).cast('int').alias('tradeYear'), nyse.stockTicker). \
+  distinct(). \
+  write. \
+  csv('/mnt/c/solutions/output/13nyse_traded_stocks', sep='|')
+  ===================================================================
+  
+ 01sumOfIntegers.py
+def sumOfIntegers(lb, ub):
+  total = 0
+  for i in range(lb, ub + 1):
+    total = total + i
+  return total
+ 02sumOfSquares.py
+def sumofsquareIntegers(lb,ub): 
+  total=0
+  for i in range(lb,ub+1):
+    total=total + (i*i)
+  return total
+ 03sumOfEven.py
+def sumOfEven(a, b): 
+  total = 0 
+  for i in range(a, b+1): 
+    if i % 2 == 0: 
+      total = total + i 
+  return total
+ 04sum.py
+def sum(lb, ub, f):
+  total = 0
+  for i in range(lb, ub+1):
+    total += f(i)
+  return total
+
+def sqr(i):
+  return i * i
+
+def cube(i):
+  return i * i * i
+
+sum(5, 15, sqr)
+sum(5, 15, cube)
+ 05CountByDate.py
+def countByDate(orders):
+  countPerDate = {}
+  for order in orders:
+    orderDate = order.split(',')[1]
+    if(countPerDate.get(orderDate)): 
+      countPerDate[orderDate] = countPerDate[orderDate] + 1
+    else: countPerDate[orderDate] = 1
+  return countPerDate
+ 06OrdersFiltered.py
+def ordersCompleted(orders):
+  ordersComplete = []
+  for order in orders:
+    if(order.split(',')[3] == 'COMPLETE'): ordersComplete.append(order)
+  return ordersComplete
+
+def myFilter(f, c):
+  c1 = []
+  for i in c:
+    if(f(i)): c1.append(i)
+  return c1
+ 07OrderRevenue.py
+orderItems = open('/Users/itversity/Research/data/retail_db/order_items/part-00000'). \
+  read(). \
+  splitlines()
+orderItemsFiltered = filter(lambda oi: int(oi.split(',')[1]) == 2, orderItems)
+orderItemSubtotals = map(lambda oi: float(oi.split(',')[4]), orderItemsFiltered)
+import functools as ft
+ft.reduce(lambda x, y: x + y, orderItemSubtotals)
+========================================================================================
+BasicPythonCollectionOperations.py
+orders = open('/data/retail_db/orders/part-00000'). \
+read(). \
+splitlines()
+
+# for order in orders[:10]: print(order)
+    
+orderDatesList = []
+
+for order in orders:
+    orderDatesList.append(order.split(',')[1])
+    
+orderDates = set(orderDatesList)
+
+# for order in list(orderDates)[:10]: print(order)
+
+orderRecord = orders[0]
+orderRecordElements = orders[0].split(',')
+
+orderTuple = (int(orderRecordElements[0]), orderRecordElements[1], int(orderRecordElements[2]), orderRecordElements[3])
+# print(orderTuple[1])
+
+orderDict = {}
+
+for order in orders:
+    orderDict[int(order.split(',')[0])] = order.split(',')[1]
+    
+print(orderDict[1])
+len(orderDict.keys())
+==================================================================
+pyspark-dataframes-01-application.properties
+[dev]
+executionMode = local
+input.base.dir = /Users/itversity/Research/data/retail_db
+output.base.dir = /Users/itversity/Research/data/bootcamp/pyspark
+
+[prod]
+executionMode = yarn-client
+input.base.dir = /public/retail_db
+output.base.dir = /user/training/bootcamp/pyspark
+ pyspark-dataframes-02-top-n-daily-products.py
+import configparser as cp, sys
+
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import sum, round, dense_rank
+from pyspark.sql.window import *
+
+props = cp.RawConfigParser()
+props.read('src/main/resources/application.properties')
+env = sys.argv[1]
+topN = int(sys.argv[2])
+
+spark = SparkSession. \
+  builder. \
+  master(props.get(env, 'executionMode')). \
+  appName('Get TopN Daily Products using Data Frame Operations'). \
+  getOrCreate()
+
+spark.conf.set('spark.sql.shuffle.partitions', '2')
+spark.sparkContext.setLogLevel('ERROR')
+
+inputBaseDir = props.get(env, 'input.base.dir')
+orders = spark.read. \
+  format('csv'). \
+  schema('order_id int, order_date string, order_customer_id int, order_status string'). \
+  load(inputBaseDir + '/orders')
+
+orderItems = spark.read. \
+  format('csv'). \
+  schema('''order_item_id int, 
+            order_item_order_id int, 
+            order_item_product_id int, 
+            order_item_quantity int,
+            order_item_subtotal float,
+            order_item_product_price float
+         '''). \
+  load(inputBaseDir + '/order_items')
+
+dailyProductRevenue = orders. \
+    where('order_status in ("COMPLETE", "CLOSED")'). \
+    join(orderItems, orders.order_id == orderItems.order_item_order_id). \
+    groupBy('order_date', 'order_item_product_id'). \
+    agg(round(sum('order_item_subtotal'), 2).alias('revenue'))
+
+spec = Window. \
+partitionBy('order_date'). \
+orderBy(dailyProductRevenue.revenue.desc())
+
+dailyProductRevenueRanked = dailyProductRevenue. \
+withColumn("rnk", dense_rank().over(spec))
+
+topNDailyProducts = dailyProductRevenueRanked. \
+where(dailyProductRevenueRanked.rnk <= topN). \
+drop('rnk'). \
+orderBy('order_date', dailyProductRevenueRanked.revenue.desc())
+
+outputBaseDir = props.get(env, 'output.base.dir')
+topNDailyProducts. \
+    write. \
+    csv(outputBaseDir + '/topn_daily_products')
+ pyspark-dataframes-03-top-n-daily-products.sh
+spark-submit \
+  --master yarn \
+  --deploy-mode client \
+  --conf spark.ui.port=12901 \
+  src/main/python/retail_db/df/TopNDailyProductsDFO.py \
+  prod
+ =======================================================
+  spark-dataframes-ranking-01-read-data.py
+# employeesPath = '/Users/itversity/Research/data/hr_db/employees/part-00000'
+employeesPath = '/mnt/c/data/hr_db/employees/part-00000'
+
+employees = spark. \
+  read. \
+  format('csv'). \
+  option('sep', '\t'). \
+  schema('''employee_id INT, 
+            first_name STRING, 
+            last_name STRING, 
+            email STRING,
+            phone_number STRING, 
+            hire_date STRING, 
+            job_id STRING, 
+            salary FLOAT,
+            commission_pct STRING,
+            manager_id STRING, 
+            department_id STRING
+         '''). \
+  load(employeesPath)
+
+employees.show()
+
+spark.conf.set('spark.sql.shuffle.partitions', '2')
+ spark-dataframes-ranking-02-define-spec.py
+from pyspark.sql.window import *
+
+spec = Window. \
+  partitionBy('department_id'). \
+  orderBy(employees.salary.desc())
+ spark-dataframes-ranking-03-rank.py
+'''
+SELECT employee_id, salary, department_id,
+  rank() OVER (PARTITION BY department_id ORDER BY salary DESC) AS rank
+FROM employees
+ORDER BY department_id, salary DESC;
+'''
+
+from pyspark.sql.functions import rank
+
+employeesRanked = employees. \
+  select('employee_id', 'salary', 'department_id'). \
+  withColumn('rank', rank().over(spec)). \
+  orderBy(employees.department_id, employees.salary.desc())
+
+employeesRanked.show(200)
+ spark-dataframes-ranking-04-dense-rank.py
+'''
+SELECT employee_id, salary, department_id,
+  dense_rank() OVER (PARTITION BY department_id ORDER BY salary DESC) AS rank
+FROM employees
+ORDER BY department_id, salary DESC;
+'''
+
+from pyspark.sql.functions import dense_rank
+
+employeesDenseRanked = employees. \
+  select('employee_id', 'salary', 'department_id'). \
+  withColumn('rank', dense_rank().over(spec)). \
+  orderBy(employees.department_id, employees.salary.desc())
+
+employeesDenseRanked.show(200)
+ spark-dataframes-ranking-05-rownumber.py
+'''
+SELECT employee_id, salary, department_id,
+  row_number() OVER (PARTITION BY department_id ORDER BY salary DESC) AS rn
+FROM employees
+ORDER BY department_id, salary DESC;
+'''
+
+from pyspark.sql.functions import row_number
+
+employeesRowNumbered = employees. \
+  select('employee_id', 'salary', 'department_id'). \
+  withColumn('rn', row_number().over(spec)). \
+  orderBy(employees.department_id, employees.salary.desc())
+
+employeesRowNumbered.show(200)
+=====================================================
+ spark-dataframes-windowing-01-read-data.py
+# employeesPath = '/Users/itversity/Research/data/hr_db/employees/part-00000'
+employeesPath = '/mnt/c/data/hr_db/employees/part-00000'
+
+employees = spark. \
+  read. \
+  format('csv'). \
+  option('sep', '\t'). \
+  schema('''employee_id INT, 
+            first_name STRING, 
+            last_name STRING, 
+            email STRING,
+            phone_number STRING, 
+            hire_date STRING, 
+            job_id STRING, 
+            salary FLOAT,
+            commission_pct STRING,
+            manager_id STRING, 
+            department_id STRING
+         '''). \
+  load(employeesPath)
+
+employees.show()
+
+spark.conf.set('spark.sql.shuffle.partitions', '2')
+ spark-dataframes-windowing-02-define-spec.py
+from pyspark.sql.window import *
+
+spec = Window. \
+  partitionBy('department_id'). \
+  orderBy(employees.salary.desc())
+ spark-dataframes-windowing-03-lead.py
+'''
+SELECT employee_id, salary, department_id,
+  lead(salary, 1) OVER (PARTITION BY department_id ORDER BY salary DESC) lead_salary
+FROM employees
+ORDER BY department_id, salary DESC;
+'''
+
+from pyspark.sql.functions import lead
+
+employeesLead = employees. \
+  select('employee_id', 'salary', 'department_id'). \
+  withColumn('lead_salary', lead(employees.salary, 1).over(spec)). \
+  orderBy(employees.department_id, employees.salary.desc())
+
+employeesLead.show(200)
+ spark-dataframes-windowing-04-lag.py
+'''
+SELECT employee_id, salary, department_id,
+  lag(salary) OVER (PARTITION BY department_id ORDER BY salary DESC) lag_salary
+FROM employees
+ORDER BY department_id, salary DESC;
+'''
+
+from pyspark.sql.functions import lag
+
+employeesLag = employees. \
+  select('employee_id', 'salary', 'department_id'). \
+  withColumn('lag_salary', lag(employees.salary, 1).over(spec)). \
+  orderBy(employees.department_id, employees.salary.desc())
+
+employeesLag.show(200)
+ spark-dataframes-windowing-05-first.py
+'''
+SELECT employee_id, salary, department_id,
+  first_value(salary) OVER (PARTITION BY department_id ORDER BY salary DESC) first_salary
+FROM employees
+ORDER BY department_id, salary DESC;
+'''
+
+from pyspark.sql.functions import first
+
+employeesFirst = employees. \
+  select('employee_id', 'salary', 'department_id'). \
+  withColumn('first_salary', first(employees.salary).over(spec)). \
+  orderBy(employees.department_id, employees.salary.desc())
+
+employeesFirst.show(200)
+
+
+ spark-dataframes-windowing-06-last.py
+'''
+SELECT employee_id, salary, department_id,
+  last_value(salary) OVER 
+    (PARTITION BY department_id ORDER BY salary DESC
+     ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) last_salary
+FROM employees
+ORDER BY department_id, salary DESC;
+'''
+
+spec = Window. \
+  partitionBy('department_id'). \
+  orderBy(employees.salary.desc()). \
+  rangeBetween(Window.unboundedPreceding, Window.unboundedFollowing)
+
+from pyspark.sql.functions import last
+
+employeesLast = employees. \
+  select('employee_id', 'salary', 'department_id'). \
+  withColumn('last_salary', last(employees.salary, False).over(spec)). \
+  orderBy(employees.department_id, employees.salary.desc())
+
+employeesLast.show(200)
+===================================================
+pyspark-dataframe-operations-window-functions-example.py
+orderItems = spark. \
+  read. \
+  json('/Users/itversity/Research/data/retail_db_json/order_items')
+
+from pyspark.sql.window import *
+from pyspark.sql.functions import *
+
+spark.conf.set('spark.sql.shuffle.partitions', '2')
+
+# spec = Window.partitionBy('order_item_order_id')
+spec = Window.partitionBy(orderItems.order_item_order_id)
+orderItemsWithRevenue = orderItems. \
+  withColumn('order_revenue', round(sum(orderItems.order_item_subtotal).over(spec), 2))
+
+orderItemsWithRevenue.printSchema()
+orderItemsWithRevenue.show()
+========================================================
+ pyspark-01-rdd-wordcount.py
+data = sc.textFile('/public/randomtextwriter/part-m-00000')
+wc = data. \
+  flatMap(lambda line: line.split(' ')). \
+  map(lambda word: (word, 1)). \
+  reduceByKey(lambda x, y: x + y)
+wc. \
+  map(lambda rec: rec[0] + ',' + str(rec[1])). \
+  saveAsTextFile('/user/training/core/wordcount')
+ pyspark-02-df-wordcount.py
+from pyspark.sql.functions import split, explode
+data = spark.read.text('/public/randomtextwriter/part-m-00000')
+wc = data.select(explode(split(data.value, ' ')).alias('words')). \
+  groupBy('words'). \
+  agg(count('words').alias('wc'))
+wc.write.csv('/user/training/df/wordcount')
+==========================================================
